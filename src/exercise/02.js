@@ -16,7 +16,7 @@ function Toggle({ children }) {
   // 📜 https://reactjs.org/docs/react-api.html#cloneelement
   // return <Switch on={on} onClick={toggle} />
   return React.Children.map(children, child => {
-   return React.cloneElement(child, {on, toggle});
+   return typeof child.type === 'string' ? child : React.cloneElement(child, {on, toggle});
   });
 }
 
@@ -37,6 +37,7 @@ function App() {
       <Toggle>
         <ToggleOn>The button is on</ToggleOn>
         <ToggleOff>The button is off</ToggleOff>
+        <span>hello</span>
         <ToggleButton />
       </Toggle>
     </div>
