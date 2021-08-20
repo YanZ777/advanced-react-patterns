@@ -3,6 +3,7 @@
 
 import * as React from 'react'
 import {Switch} from '../switch'
+import warning from 'warning'
 
 const callAll = (...fns) => (...args) => fns.forEach(fn => fn?.(...args))
 
@@ -25,6 +26,33 @@ function toggleReducer(state, {type, initialState}) {
   }
 }
 
+function useOnChangeNoHandlerWarning(
+   controlPropValue,
+   hasOnChange,
+   readOnly) {
+   const isControlled = controlPropValue != null;
+
+   React.useEffect(() => {
+      warning(!hasOnChange && isControlled && !readOnly, 'You provided a value prop to a form field without an onChange handler.')
+   }, [hasOnChange, isControlled, readOnly])
+}
+
+function useControlledSwitchWarning(
+   controlPropValue
+) {
+   const isControlled = controlPropValue != null;
+   const {current: onWasControlled} = React.useRef(isControlled)
+
+   React.useEffect(() => {
+      if (isControlled && !onWasControlled) {
+         warning(true, 'A component is changing an uncontrolled input of type undefined to be controlled.')
+      }
+      if (!isControlled && onWasControlled) {
+       warning(true, 'A component is changing an controlled input to be undefined.')
+      }
+   }, [isControlled, onWasControlled])
+}
+
 function useToggle({
   initialOn = false,
   reducer = toggleReducer,
@@ -33,12 +61,19 @@ function useToggle({
   // 💰 you can alias it to `controlledOn` to avoid "variable shadowing."
   onChange,
   on: controlledOn,
+  readOnly = false,
 } = {}) {
   const {current: initialState} = React.useRef({on: initialOn})
   const [state, dispatch] = React.useReducer(reducer, initialState)
+
   // 🐨 determine whether on is controlled and assign that to `onIsControlled`
   // 💰 `controlledOn != null`
   const onIsControlled = controlledOn != null;
+
+  if (process.env.NODE_ENV !== 'production') {
+   useOnChangeNoHandlerWarning(controlledOn, Boolean(onChange), readOnly)
+   useControlledSwitchWarning(controlledOn)
+  }
 
   // 🐨 Replace the next line with assigning `on` to `controlledOn` if
   // `onIsControlled`, otherwise, it should be `state.on`.
@@ -103,8 +138,8 @@ function useToggle({
   }
 }
 
-function Toggle({on: controlledOn, onChange}) {
-  const {on, getTogglerProps} = useToggle({on: controlledOn, onChange})
+function Toggle({on: controlledOn, onChange, readOnly}) {
+  const {on, getTogglerProps} = useToggle({on: controlledOn, onChange, readOnly})
   const props = getTogglerProps({on})
   return <Switch {...props} />
 }
